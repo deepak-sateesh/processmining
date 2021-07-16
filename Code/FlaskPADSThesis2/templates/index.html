@@ -1,0 +1,35 @@
+{% extends "baseBootstrapTemplate.html" %}
+{% block title %}Home Page{% endblock %}
+{% block content %}
+
+<h5 style="color:#00529F;"> {{PageName}} </h5>
+
+<p>Content block !!</p>
+<!--<div class="container-fluid">
+    <div class="table-responsive"> {{result}} </div>
+</div>-->
+<div class="container-fluid">
+    <div class="table-responsive">
+        <table class="table table-striped table-class"  id="example">
+            <thead>
+                <tr>
+                    {% for col in colnames %}
+                    <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    {% for col in colnames %}
+                    <td>{{ record[col] }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+{% endblock %}
