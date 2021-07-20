@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="8291e27f-634a-4b59-8d78-75860e6918dd" name="Default Changelist" comment="Flask UI + Backloop data table+ pagination" />
+    <list default="true" id="8291e27f-634a-4b59-8d78-75860e6918dd" name="Default Changelist" comment="Flask UI + Backloop data table+ pagination">
+      <change beforePath="$PROJECT_DIR$/../Code/FlaskPADSThesis2/.idea/FlaskPADSThesis2.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../Code/FlaskPADSThesis2/.idea/FlaskPADSThesis2.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Code/FlaskPADSThesis2/init.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Code/FlaskPADSThesis2/init.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="DjangoConsoleOptions" custom-start-script="import sys; print('Python %s on %s' % (sys.version, sys.platform))&#10;import django; print('Django %s' % django.get_version())&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;if 'setup' in dir(django): django.setup()&#10;import django_manage_shell; django_manage_shell.run(PROJECT_ROOT)">
+    <option name="myCustomStartScript" value="import sys; print('Python %s on %s' % (sys.version, sys.platform))&#10;import django; print('Django %s' % django.get_version())&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;if 'setup' in dir(django): django.setup()&#10;import django_manage_shell; django_manage_shell.run(PROJECT_ROOT)" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -145,7 +152,7 @@
       <option name="presentableId" value="Default" />
       <updated>1626343413726</updated>
       <workItem from="1626347107863" duration="16201000" />
-      <workItem from="1626428853180" duration="17134000" />
+      <workItem from="1626428853180" duration="18237000" />
     </task>
     <servers />
   </component>
@@ -174,6 +181,16 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+      </list>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="Flask UI + Backloop data table+ pagination" />
@@ -184,7 +201,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/../Code/FlaskPADSThesis2/init.py</url>
-          <line>121</line>
+          <line>180</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
