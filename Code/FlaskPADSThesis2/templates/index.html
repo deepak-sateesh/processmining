@@ -5,9 +5,15 @@
 <h5 style="color:#00529F;"> {{PageName}} </h5>
 
 <p>Content block !!</p>
+{% if PageName.endswith("uploaded") %}
+    <p> DFG SVG
+        Image Below</p>
+    <div class="SvgDiv" id="zoomSVG">{{svgImage}}</div>
+{% endif %}
 <!--<div class="container-fluid">
     <div class="table-responsive"> {{result}} </div>
 </div>-->
+<script src="../static/JS/CustomJS.js" />
 <div class="container-fluid">
     <div class="table-responsive">
         <table class="table table-striped table-class"  id="example">
