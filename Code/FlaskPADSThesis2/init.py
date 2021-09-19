@@ -8,6 +8,8 @@ from pm4py.algo.organizational_mining.roles import algorithm as roles_discovery
 import numpy as np
 from pm4py.statistics.eventually_follows.log import get as efg_get
 from pm4py.algo.discovery.dfg import algorithm as dfg_discovery
+from pm4py.visualization.dfg import visualizer as dfg_visualization
+from flask import Markup
 
 from pm4py.algo.filtering.log import ltl as ll
 
@@ -19,7 +21,7 @@ blacklist = ['Lapping - Machine 1', 'Turning & Milling - Machine 8']
 maxTime = 86400
 df = pd.DataFrame(columns=cols)
 f = "No File "
-
+i=0
 logSorted = []
 
 
@@ -132,10 +134,13 @@ def Parallelizable_tasks_ProcessCaseLevel():
     global f
     print("Parallelizable_tasks_CaseLevel function\n\n")
     log_csv3 = pd.read_csv(f, sep=',')
-    log_csv3.rename(columns={'Activity': 'concept:name'}, inplace=True)
+    log_csv3.rename(columns={'Activity': 'concept:name','Start Timestamp':'time:timestamp'}, inplace=True)
+    log_csv3["time:timestamp"] = log_csv3["time:timestamp"].apply(pd.to_datetime)
+
     parameters = {log_converter.Variants.TO_EVENT_LOG.value.Parameters.CASE_ID_KEY: 'Case ID'}
     event_log3 = log_converter.apply(log_csv3, parameters=parameters, variant=log_converter.Variants.TO_EVENT_LOG)
-    event_log3 = sorting.sort_timestamp(event_log3, "Start Timestamp", False)
+    event_log3 = sorting.sort_timestamp(event_log3, "time:timestamp", False)
+
     print("Eventlog3", event_log3)
     for case_index, case in enumerate(event_log3):
         # print(case)
@@ -144,6 +149,7 @@ def Parallelizable_tasks_ProcessCaseLevel():
                                                                   attributes_filter.Parameters.POSITIVE: True})
 
         dfg_simple3 = dfg_discovery.apply(tracefilter_log_pos)
+
         l = []
         for k in dfg_simple3.keys():
             if (k[0] != k[1]):
@@ -318,15 +324,38 @@ def Interface(log):
 
             prev = event["Resource"]
 
+def GenerateDFG():
+    global f
+    print("GenerateDFG")
+    log_csv4 = pd.read_csv(f, sep=',')
+    log_csv4.rename(columns={'Activity': 'concept:name', 'Start Timestamp': 'time:timestamp'}, inplace=True)
+    log_csv4["time:timestamp"] = log_csv4["time:timestamp"].apply(pd.to_datetime)
 
+    parameters = {log_converter.Variants.TO_EVENT_LOG.value.Parameters.CASE_ID_KEY: 'Case ID'}
+    event_log4 = log_converter.apply(log_csv4, parameters=parameters, variant=log_converter.Variants.TO_EVENT_LOG)
+    event_log4 = sorting.sort_timestamp(event_log4, "time:timestamp", False)
+
+    dfg_simple4 = dfg_discovery.apply(event_log4,  variant=dfg_discovery.Variants.FREQUENCY)
+    parameters = {dfg_visualization.Variants.FREQUENCY.value.Parameters.FORMAT: "svg"}
+    gviz = dfg_visualization.apply(dfg_simple4, log=event_log4, variant=dfg_visualization.Variants.FREQUENCY, parameters=parameters)
+    #print(dfg_visualization.view(gviz))
+    dfg_visualization.save(gviz, "MainDFG.svg")
 @app.route("/")
 @app.route('/<PageName>')
 def home(PageName=None):
     global logSorted
-    global df
+    global df, f, i
     temp = ""
     columnNames = ""
+    svg=""
     if (PageName != None):
+        if(f.strip(" ")=="No File" ):
+            print ("empty  file=>",f)
+        elif(i<1):
+            print("File present=>",f)
+            GenerateDFG()
+            svg = open('MainDFG.svg').read()
+            i=i+1
         if PageName == "backloop":
             PageName = "Backloops"
             df.drop(df.index, inplace=True)
@@ -384,13 +413,13 @@ def home(PageName=None):
         columnNames = df.columns.values
     df.drop(df.index, inplace=True)
     return render_template("index.html", PageName=PageName,
-                           records=temp, colnames=columnNames)
+                           records=temp, colnames=columnNames, svgImage=Markup(svg))
 
 
 @app.route('/upload/csv', methods=['GET', 'POST'])
 def upload():
     global logSorted
-    global f
+    global f, i
 
     if request.method == 'POST' and 'csv' in request.form.keys():
         f = request.form['csv']
@@ -409,6 +438,7 @@ def upload():
                                                            }'''
         event_log = log_converter.apply(log_csv, parameters=parameters, variant=log_converter.Variants.TO_EVENT_LOG)
         logSorted = sorting.sort_timestamp(event_log, "Start Timestamp", False)
+        i=0
 
     return redirect(f"../{f} uploaded")
 
@@ -417,37 +447,4 @@ if __name__ == "__main__":
     app.run(debug=True)
 
 
-def main():
-    log_csv = pd.read_csv('Production_Data.csv', sep=',')
-    log_csv['row_num'] = np.arange(len(log_csv)) + 2
-    log_csv.rename(columns={'Case ID': 'case:Case ID'}, inplace=True)
 
-    parameters = {log_converter.Variants.TO_EVENT_LOG.value.Parameters.CASE_ID_KEY: 'case:Case ID',
-
-                  }
-    '''parameters={constants.PARAMETER_CONSTANT_CASEID_KEY: "Case ID",
-                                                       constants.PARAMETER_CONSTANT_ACTIVITY_KEY: "Activity",
-                                                        constants.PARAMETER_CONSTANT_START_TIMESTAMP_KEY:"Start Timestamp",
-                                                        constants.PARAMETER_CONSTANT_RESOURCE_KEY:"Resource",
-                                                        constants.PARAMETER_CONSTANT_TIMESTAMP_KEY:"Complete Timestamp"
-                                                       }'''
-    event_log = log_converter.apply(log_csv, parameters=parameters, variant=log_converter.Variants.TO_EVENT_LOG)
-    logSorted = sorting.sort_timestamp(event_log, "Start Timestamp", False)
-
-    blacklist = ['Lapping - Machine 1', 'Turning & Milling - Machine 8']
-
-    # Unwanted_Activity(logSorted, blacklist)
-    Backloop(logSorted)
-    # Redundant_Activity(logSorted)
-    # Interface(logSorted)
-    # maxTime=86400
-    # Idle_time(logSorted, maxTime)
-    # Variance_of_process_times(logSorted)
-    # Bottleneck(logSorted)
-    ##Parallelizable_tasks_loglevel()
-    # Parallelizable_tasks_CaseLevel()
-
-    # dontFollowList=[('Setup - Machine 8', 'Packing')]
-    # Eventually_follows(dontFollowList)
-
-    # Roles_discovery()
