@@ -1,0 +1,26 @@
+{% extends "baseBootstrapTemplate.html" %}
+{% block title %}Home Page{% endblock %}
+{% block content %}
+
+
+<p>Please select the activities which are not supposed to be following one another</p>
+<form action="/EventuallyFollowsParameters" method="post">
+  <label >Select the first activity:</label>
+    <select name="p1" class="selectpicker form-control">
+                {% for a in ActivitySet %}
+                <option value="{{ a }}">{{ a }}</option>
+                {% endfor %}
+    </select>
+  <br/>
+  <label >Select the second activity:</label>
+    <select name="p2" class="selectpicker form-control">
+                  {% for a in ActivitySet %}
+                  <option value="{{ a }}">{{ a }}</option>
+                  {% endfor %}
+    </select>
+
+
+  <input type="submit" value="Submit"></input>
+</form>
+
+{% endblock %}

@@ -10,20 +10,24 @@ from pm4py.statistics.eventually_follows.log import get as efg_get
 from pm4py.algo.discovery.dfg import algorithm as dfg_discovery
 from pm4py.visualization.dfg import visualizer as dfg_visualization
 from flask import Markup
+import xml.etree.ElementTree as ET
 
 from pm4py.algo.filtering.log import ltl as ll
 
 app = Flask(__name__)
+log_csv=[]
 cols = ['Detected Weakness Row', 'Case ID', 'Weakness Type (AF/PA)', 'Weakness ID', 'Weakness Origin', 'Weakness Time',
         'Weakness Information', 'Weakness Measurement', 'Weakness Level']
 dontFollowList = [('Setup - Machine 8', 'Packing')]
 blacklist = ['Lapping - Machine 1', 'Turning & Milling - Machine 8']
+activitySet=set()
 maxTime = 86400
 df = pd.DataFrame(columns=cols)
 f = "No File "
 i=0
 logSorted = []
-
+Nodes=[]
+Edges=[]
 
 # Checks for the largest common prefix
 def lcp(s, t):
@@ -54,6 +58,13 @@ def Find_sequence(eventList):
 def Backloop(log):
     print("Backloop function")
     global df
+    global Nodes, Edges
+    Nodes.clear()
+    Edges.clear()
+    Nodes=[]
+    Edges=[]
+    caseList = []
+    edgeList = []
     for case_index, case in enumerate(log):
         eventList = []
         lrs = ""
@@ -62,18 +73,231 @@ def Backloop(log):
             eventList.append(event["Activity"])
         if Find_sequence(eventList) is not None:
             lrs = Find_sequence(eventList)
+            caseList.append(case.attributes['Case ID'])
             # print("Repeating sequence for events in case:",case.attributes['concept:name']," is: ", lrs)
+            #print("LRS:=>",lrs)
+
+            Nodes=Nodes+lrs
+            n=len(lrs)
+            for i in range(n-1):
+                edgeList.append((lrs[i], lrs[i+1]))
+
             row = {cols[0]: event['row_num'], cols[1]: case.attributes['Case ID'], cols[2]: 'AF', cols[3]: '2',
                    cols[4]: 'Automatic detection', cols[5]: '', cols[6]: 'Backloop {' + ''.join(lrs) + '}',
                    cols[7]: 'In the case', cols[8]: 'Process level'}
             df = df.append(row, ignore_index=True)
-    # for trace in event_log:
+
+
+
+
+
+    caseSet=set(caseList)
+
+    n=len(caseList)
+    #print("Nodes bef->", Nodes)
+    #print("Nodes bef->", Nodes)
+    '''for i in range(n):
+        if(i<n):
+            edgeList.append((caseList[0],caseList[1]))'''
+    if Edges is not None:
+        Edges=set(edgeList)
+    if Nodes is not None:
+        Nodes = set(Nodes)
+
+    print("Nodes->", Nodes)
+    DisplayCaseFilteredDFG(caseSet,"Backloop")
+    #for trace in event_log:
     #    print(trace)
+
+def DisplayCaseFilteredDFG(CaseList, src):
+    global log_csv
+    filteredCasesLogCSV=[]
+
+    global  Nodes, Edges
+
+    #print(log_csv.shape)
+    #print(filteredCasesLogCSV.shape)
+    log_csv.rename(columns={'Activity': 'concept:name', 'Start Timestamp': 'time:timestamp'}, inplace=True)
+    log_csv["time:timestamp"] = log_csv["time:timestamp"].apply(pd.to_datetime)
+    filteredCasesLogCSV = log_csv[log_csv['case:Case ID'].isin(CaseList)]
+
+
+
+    parameters = {log_converter.Variants.TO_EVENT_LOG.value.Parameters.CASE_ID_KEY: 'case:Case ID'}
+    event_log5 = log_converter.apply(filteredCasesLogCSV, parameters=parameters, variant=log_converter.Variants.TO_EVENT_LOG)
+    event_log5 = sorting.sort_timestamp(event_log5, "time:timestamp", False)
+
+    dfg_simple4 = dfg_discovery.apply(event_log5, variant=dfg_discovery.Variants.FREQUENCY)
+    parameters = {dfg_visualization.Variants.FREQUENCY.value.Parameters.FORMAT: "svg"}
+    gviz = dfg_visualization.apply(dfg_simple4, log=event_log5, variant=dfg_visualization.Variants.FREQUENCY,
+                                   parameters=parameters)
+    #print(dfg_visualization.view(gviz))
+    #print(gviz)
+
+    if(src=="Backloop"):
+        dfg_visualization.save(gviz, "./SVGs/Backloop.svg")
+        mytree = ET.parse('./SVGs/Backloop.svg')
+        myroot = mytree.getroot()
+        NodesDict={}
+        for g in myroot.findall('{http://www.w3.org/2000/svg}g'):
+            for gg in g.findall('{http://www.w3.org/2000/svg}g'):
+                if (gg.get('class') == 'node'):
+                    n = gg.find('{http://www.w3.org/2000/svg}text').text
+                    nWithoutCount=n.split(" (")
+                    if (nWithoutCount[0] in Nodes):
+                        # chAttrb = gg.find('{http://www.w3.org/2000/svg}polygon').attrib
+                        # print((chAttrb.keys())[0])
+                        temp=gg.find('{http://www.w3.org/2000/svg}title').text
+                        print(temp)
+                        print("nWithoutCount=>",nWithoutCount)
+                        NodesDict[nWithoutCount[0]] = gg.find('{http://www.w3.org/2000/svg}title').text
+                        gg.find('{http://www.w3.org/2000/svg}polygon').set('fill', '#800000')
+
+        print("NodesDict=>",NodesDict)
+        print("Edges=>",Edges)
+        for g in myroot.findall('{http://www.w3.org/2000/svg}g'):
+            for gg in g.findall('{http://www.w3.org/2000/svg}g'):
+                if (gg.get('class') == 'edge'):
+                    for (s, d) in Edges:
+                        title = gg.find('{http://www.w3.org/2000/svg}title').text
+                        t = [title.split('->')]
+                        if(s in NodesDict.keys() and d in NodesDict.keys()):
+                            if (NodesDict[s] == t[0][0] and NodesDict[d] == t[0][1]):
+                                print((s, NodesDict[s], t[0][0], d, NodesDict[d], t[0][1],
+                                       gg.find('{http://www.w3.org/2000/svg}title').text))
+                                gg.find('{http://www.w3.org/2000/svg}polygon').set('fill', '#800000')
+                                gg.find('{http://www.w3.org/2000/svg}polygon').set('stroke', '#800000')
+                                gg.find('{http://www.w3.org/2000/svg}path').set('stroke', '#800000')
+        mytree.write('./ModifiedSVGs/backloopModified.svg')
+
+    elif (src == "Eventually_follows"):
+        dfg_visualization.save(gviz, "./SVGs/Eventually_follows.svg")
+        mytree = ET.parse('./SVGs/Eventually_follows.svg')
+        myroot = mytree.getroot()
+        NodesDict = {}
+        print("Eventually follows DisplayCaseFilteredDFG")
+        for g in myroot.findall('{http://www.w3.org/2000/svg}g'):
+            for gg in g.findall('{http://www.w3.org/2000/svg}g'):
+                if (gg.get('class') == 'node'):
+                    n = gg.find('{http://www.w3.org/2000/svg}text').text
+                    nWithoutCount = n.split(" (")
+                    if (nWithoutCount[0] in Nodes):
+                        # chAttrb = gg.find('{http://www.w3.org/2000/svg}polygon').attrib
+                        # print((chAttrb.keys())[0])
+                        temp = gg.find('{http://www.w3.org/2000/svg}title').text
+                        print(temp)
+                        print("nWithoutCount=>", nWithoutCount)
+                        NodesDict[nWithoutCount[0]] = gg.find('{http://www.w3.org/2000/svg}title').text
+                        gg.find('{http://www.w3.org/2000/svg}polygon').set('fill', '#800000')
+
+        print("NodesDict=>", NodesDict)
+        print("Edges=>", Edges)
+        for g in myroot.findall('{http://www.w3.org/2000/svg}g'):
+            for gg in g.findall('{http://www.w3.org/2000/svg}g'):
+                if (gg.get('class') == 'edge'):
+                    for (s, d) in Edges:
+                        title = gg.find('{http://www.w3.org/2000/svg}title').text
+                        t = [title.split('->')]
+                        if (s in NodesDict.keys() and d in NodesDict.keys()):
+                            if (NodesDict[s] == t[0][0] and NodesDict[d] == t[0][1]):
+                                print((s, NodesDict[s], t[0][0], d, NodesDict[d], t[0][1],
+                                       gg.find('{http://www.w3.org/2000/svg}title').text))
+                                gg.find('{http://www.w3.org/2000/svg}polygon').set('fill', '#800000')
+                                gg.find('{http://www.w3.org/2000/svg}polygon').set('stroke', '#800000')
+                                gg.find('{http://www.w3.org/2000/svg}path').set('stroke', '#800000')
+
+        mytree.write('./ModifiedSVGs/Eventually_followsModified.svg')
+
+    elif (src == "Parallelizable_tasks_ProcessCaseLevel"):
+        dfg_visualization.save(gviz, "./SVGs/Parallelizable_tasks_ProcessCaseLevel.svg")
+        mytree = ET.parse('./SVGs/Parallelizable_tasks_ProcessCaseLevel.svg')
+        myroot = mytree.getroot()
+        NodesDict = {}
+        print("Parallelizable_tasks_ProcessCaseLevel DisplayCaseFilteredDFG")
+        for g in myroot.findall('{http://www.w3.org/2000/svg}g'):
+            for gg in g.findall('{http://www.w3.org/2000/svg}g'):
+                if (gg.get('class') == 'node'):
+                    n = gg.find('{http://www.w3.org/2000/svg}text').text
+                    nWithoutCount = n.split(" (")
+                    if (nWithoutCount[0] in Nodes):
+                        # chAttrb = gg.find('{http://www.w3.org/2000/svg}polygon').attrib
+                        # print((chAttrb.keys())[0])
+                        temp = gg.find('{http://www.w3.org/2000/svg}title').text
+                        print(temp)
+                        print("nWithoutCount=>", nWithoutCount)
+                        NodesDict[nWithoutCount[0]] = gg.find('{http://www.w3.org/2000/svg}title').text
+                        gg.find('{http://www.w3.org/2000/svg}polygon').set('fill', '#800000')
+
+        print("NodesDict=>", NodesDict)
+        print("Edges=>", Edges)
+        for g in myroot.findall('{http://www.w3.org/2000/svg}g'):
+            for gg in g.findall('{http://www.w3.org/2000/svg}g'):
+                if (gg.get('class') == 'edge'):
+                    for (s, d) in Edges:
+                        title = gg.find('{http://www.w3.org/2000/svg}title').text
+                        t = [title.split('->')]
+                        if (s in NodesDict.keys() and d in NodesDict.keys()):
+                            if (NodesDict[s] == t[0][0] and NodesDict[d] == t[0][1]):
+                                print((s, NodesDict[s], t[0][0], d, NodesDict[d], t[0][1],
+                                       gg.find('{http://www.w3.org/2000/svg}title').text))
+                                gg.find('{http://www.w3.org/2000/svg}polygon').set('fill', '#800000')
+                                gg.find('{http://www.w3.org/2000/svg}polygon').set('stroke', '#800000')
+                                gg.find('{http://www.w3.org/2000/svg}path').set('stroke', '#800000')
+
+        mytree.write('./ModifiedSVGs/Parallelizable_tasks_ProcessCaseLevelModified.svg')
+
+    elif (src == "Redundant_Activity"):
+        dfg_visualization.save(gviz, "./SVGs/Redundant_Activity.svg")
+        mytree = ET.parse('./SVGs/Redundant_Activity.svg')
+        myroot = mytree.getroot()
+        NodesDict = {}
+        print("Redundant_Activity DisplayCaseFilteredDFG")
+        for g in myroot.findall('{http://www.w3.org/2000/svg}g'):
+            for gg in g.findall('{http://www.w3.org/2000/svg}g'):
+                if (gg.get('class') == 'node'):
+                    n = gg.find('{http://www.w3.org/2000/svg}text').text
+                    nWithoutCount = n.split(" (")
+                    if (nWithoutCount[0] in Nodes):
+                        # chAttrb = gg.find('{http://www.w3.org/2000/svg}polygon').attrib
+                        # print((chAttrb.keys())[0])
+                        temp = gg.find('{http://www.w3.org/2000/svg}title').text
+                        print(temp)
+                        print("nWithoutCount=>", nWithoutCount)
+                        NodesDict[nWithoutCount[0]] = gg.find('{http://www.w3.org/2000/svg}title').text
+                        gg.find('{http://www.w3.org/2000/svg}polygon').set('fill', '#800000')
+
+        print("NodesDict=>", NodesDict)
+        print("Edges=>", Edges)
+        for g in myroot.findall('{http://www.w3.org/2000/svg}g'):
+            for gg in g.findall('{http://www.w3.org/2000/svg}g'):
+                if (gg.get('class') == 'edge'):
+                    for (s, d) in Edges:
+                        title = gg.find('{http://www.w3.org/2000/svg}title').text
+                        t = [title.split('->')]
+                        if (s in NodesDict.keys() and d in NodesDict.keys()):
+                            if (NodesDict[s] == t[0][0] and NodesDict[d] == t[0][1]):
+                                print((s, NodesDict[s], t[0][0], d, NodesDict[d], t[0][1],
+                                       gg.find('{http://www.w3.org/2000/svg}title').text))
+                                gg.find('{http://www.w3.org/2000/svg}polygon').set('fill', '#800000')
+                                gg.find('{http://www.w3.org/2000/svg}polygon').set('stroke', '#800000')
+                                gg.find('{http://www.w3.org/2000/svg}path').set('stroke', '#800000')
+
+        mytree.write('./ModifiedSVGs/Redundant_ActivityModified.svg')
+
+    elif(src=="Parallelizable_tasks_ProcessCaseLevel"):
+        print("Parallelizable_tasks_ProcessCaseLevel DisplayCaseFilteredDFG")
+
+
 
 
 def Eventually_follows(lt):
     global df
     global f
+    global log_csv
+    global Nodes, Edges
+    Nodes = []
+    Edges=[]
+    caseList=[]
     log_csv = pd.read_csv(f, sep=',')
     log_csv['row_num'] = np.arange(len(log_csv)) + 2
     # print(log_csv)
@@ -94,14 +318,19 @@ def Eventually_follows(lt):
     ls = sorting.sort_timestamp(event_log, "time:timestamp", False)
 
     efg_graph = efg_get.apply(ls)
-    followList = []
+
+
     for e in efg_graph.keys():
         if e in lt:
             print("Followed times:", (e, efg_graph[e]))
-            followList.append(e)
+            Nodes.append(e[0])
+            Nodes.append(e[1])
+
+            Edges.append(e)
 
     for case_index, case in enumerate(ls):
         # print(case.attributes['Case ID'] )
+
         eList = []
         for event_index, event in enumerate(case):
             # print (event_index,event)
@@ -127,11 +356,16 @@ def Eventually_follows(lt):
                        cols[6]: 'Unwanted follow \"' + prev_e[0] + '\", \"' + follow_e[0] + '\"',
                        cols[7]: 'In the case', cols[8]: 'Case level'}
                 df = df.append(row, ignore_index=True)
-
+                caseList.append(prev_e[2])
+    caseList=set(caseList)
+    if Nodes is not None:
+        Nodes = set(Nodes)
+    DisplayCaseFilteredDFG(caseList,"Eventually_follows")
 
 def Parallelizable_tasks_ProcessCaseLevel():
     global df
     global f
+    caseList=[]
     print("Parallelizable_tasks_CaseLevel function\n\n")
     log_csv3 = pd.read_csv(f, sep=',')
     log_csv3.rename(columns={'Activity': 'concept:name','Start Timestamp':'time:timestamp'}, inplace=True)
@@ -166,10 +400,12 @@ def Parallelizable_tasks_ProcessCaseLevel():
                    cols[3]: '9', cols[4]: 'Automatic detection', cols[5]: '',
                    cols[6]: 'Parallelizable tasks :' + ''.join(str(l1)), cols[7]: 'In the Process',
                    cols[8]: 'Process level'}
+            caseList.append(case.attributes['concept:name'])
             df = df.append(row, ignore_index=True)
             # print("\n\nParallelizable tasks for Case:",case.attributes["concept:name"]," are => ", end=" ")
             # print(l1)
-
+    caseList=set(caseList)
+    DisplayCaseFilteredDFG(caseList,"Parallelizable_tasks_ProcessCaseLevel")
 
 def find_duplicate_events(x):
     _size = len(x)
@@ -183,7 +419,10 @@ def find_duplicate_events(x):
 
 
 def Redundant_Activity(log):
-    global df
+    global df, Nodes, Edges
+    Nodes=[]
+    Edges=[]
+    caseList=[]
     print("Redundant_Activity function")
     for case_index, case in enumerate(log):
         # print("\n Case Id: %s" % ( case.attributes["concept:name"]))
@@ -200,8 +439,13 @@ def Redundant_Activity(log):
                    cols[4]: 'Automatic detection', cols[5]: "",
                    cols[6]: 'Redundant Activities list: \"' + ''.join(duplicateEventList) + '\"',
                    cols[7]: 'In the Process', cols[8]: 'Process Level'}
+            caseList.append(case.attributes['concept:name'])
+            Nodes.append(event["Activity"])
             df = df.append(row, ignore_index=True)
-
+    caseList = set(caseList)
+    Nodes=set(Nodes)
+    #print("Nodes=>", Nodes)
+    DisplayCaseFilteredDFG(caseList, "Redundant_Activity")
 
 def Unwanted_Activity(log, blacklist):
     global df, cols
@@ -321,7 +565,6 @@ def Interface(log):
                        cols[6]: 'Change of interface for activity ' + event["Activity"] + ' from ' + prev + ' to ' +
                                 event["Resource"], cols[7]: 'In the case', cols[8]: 'Event Level'}
                 df = df.append(row, ignore_index=True)
-
             prev = event["Resource"]
 
 def GenerateDFG():
@@ -360,8 +603,11 @@ def home(PageName=None):
             PageName = "Backloops"
             df.drop(df.index, inplace=True)
             Backloop(logSorted)
+        elif(PageName == "eventuallyFollowsInit"):
+            return render_template("EventuallyFollowsInit.html", ActivitySet=activitySet)
         elif (PageName == "eventuallyFollows"):
             df.drop(df.index, inplace=True)
+            print("dontFollowList=>",dontFollowList)
             Eventually_follows(dontFollowList)
             PageName = "Eventually Follows"
         elif (PageName == "parallelizableTasks"):
@@ -372,6 +618,8 @@ def home(PageName=None):
             df.drop(df.index, inplace=True)
             Redundant_Activity(logSorted)
             PageName = "Redundant Activity"
+        elif (PageName == "unwantedActivityInit"):
+            return render_template("unwantedActivityInit.html", ActivitySet=activitySet)
         elif (PageName == "unwantedActivity"):
             df.drop(df.index, inplace=True)
             Unwanted_Activity(logSorted, blacklist)
@@ -420,7 +668,8 @@ def home(PageName=None):
 def upload():
     global logSorted
     global f, i
-
+    global log_csv
+    global activitySet
     if request.method == 'POST' and 'csv' in request.form.keys():
         f = request.form['csv']
         log_csv = pd.read_csv(f, sep=',')
@@ -438,9 +687,41 @@ def upload():
                                                            }'''
         event_log = log_converter.apply(log_csv, parameters=parameters, variant=log_converter.Variants.TO_EVENT_LOG)
         logSorted = sorting.sort_timestamp(event_log, "Start Timestamp", False)
-        i=0
+        for case_index, case in enumerate(logSorted):
+            lrs = ""
+            indexList = []
+            for event_index, event in enumerate(case):
+                activitySet.add(event["Activity"])
 
+        i=0
+    activitySet=sorted(activitySet)
+    print("activitySet=>", activitySet)
     return redirect(f"../{f} uploaded")
+
+@app.route('/EventuallyFollowsParameters', methods=['GET', 'POST'])
+def parameterEFInit():
+    global activitySet
+    global dontFollowList
+    if request.method == 'POST' :
+        P1= request.form['p1']
+        P2= request.form['p2']
+    dontFollowList=[]
+    dontFollowList.append((P1,P2))
+
+    return redirect("../eventuallyFollows")
+
+@app.route('/UnwantedActivityParameter', methods=['GET', 'POST'])
+def parameterUnwantedActivityInit():
+    global activitySet
+    global blackList
+    if request.method == 'POST' :
+        P= request.form['p']
+
+    blackList=[]
+    print("blacklist p=>", P)
+    #blackList.join(P)
+
+    return redirect("../unwantedActivity")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,18 @@
+{% extends "baseBootstrapTemplate.html" %}
+{% block title %}Home Page{% endblock %}
+{% block content %}
+
+
+<p>Please select the activities which are not supposed to be not occurring</p>
+<form action="/UnwantedActivityParameter" method="post">
+  <label >Select the unwanted activity:</label>
+    <select name="p" multiple class="" >
+                {% for a in ActivitySet %}
+                <option value="{{ a }}">{{ a }}</option>
+                {% endfor %}
+    </select>
+  <br/>
+  <input type="submit" value="Submit"></input>
+</form>
+
+{% endblock %}
