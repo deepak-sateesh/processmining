@@ -1,0 +1,29 @@
+\begin{thebibliography}{2}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Zobel(2014)]{DBLP:books/sp/Zobel14}
+Justin Zobel.
+\newblock \emph{Writing for Computer Science}.
+\newblock Springer, 2014.
+\newblock ISBN 978-1-4471-6638-2.
+\newblock \doi{10.1007/978-1-4471-6639-9}.
+\newblock URL \url{https://doi.org/10.1007/978-1-4471-6639-9}.
+
+\bibitem[Leemans et~al.(2013)Leemans, Fahland, and van~der
+  Aalst]{DBLP:conf/apn/LeemansFA13}
+Sander J.~J. Leemans, Dirk Fahland, and Wil M.~P. van~der Aalst.
+\newblock Discovering block-structured process models from event logs - {A}
+  constructive approach.
+\newblock In Jos{\'{e}}~Manuel Colom and J{\"{o}}rg Desel, editors,
+  \emph{Application and Theory of Petri Nets and Concurrency - 34th
+  International Conference, {PETRI} {NETS} 2013, Milan, Italy, June 24-28,
+  2013. Proceedings}, volume 7927 of \emph{Lecture Notes in Computer Science},
+  pages 311--329. Springer, 2013.
+\newblock \doi{10.1007/978-3-642-38697-8\_17}.
+\newblock URL \url{https://doi.org/10.1007/978-3-642-38697-8\_17}.
+
+\end{thebibliography}

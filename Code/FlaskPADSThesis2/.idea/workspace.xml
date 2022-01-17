@@ -11,11 +11,21 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="JavaScript File" />
+        <option value="Python Script" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/init.py" root0="FORCE_HIGHLIGHTING" />
@@ -27,6 +37,7 @@
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="DefaultHtmlFileTemplate" value="HTML File" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
@@ -52,7 +63,22 @@
       <workItem from="1629805542312" duration="1113000" />
       <workItem from="1631265756181" duration="8510000" />
       <workItem from="1632057998427" duration="1393000" />
-      <workItem from="1632060343204" duration="1142000" />
+      <workItem from="1632060343204" duration="1872000" />
+      <workItem from="1632483603305" duration="903000" />
+      <workItem from="1636264540410" duration="3856000" />
+      <workItem from="1636349411853" duration="4953000" />
+      <workItem from="1636977758079" duration="1401000" />
+      <workItem from="1639551811944" duration="1086000" />
+      <workItem from="1640331168458" duration="15354000" />
+      <workItem from="1640361369474" duration="696000" />
+      <workItem from="1641890214771" duration="1715000" />
+      <workItem from="1641892199714" duration="1854000" />
+      <workItem from="1641894106418" duration="1121000" />
+      <workItem from="1641895254585" duration="11381000" />
+      <workItem from="1642328277763" duration="117000" />
+      <workItem from="1642328403757" duration="1079000" />
+      <workItem from="1642329559017" duration="2078000" />
+      <workItem from="1642423964608" duration="3967000" />
     </task>
     <task id="LOCAL-00001" summary="All the functions with table output added">
       <created>1626783435770</created>
@@ -70,5 +96,21 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="All the functions with table output added" />
     <option name="LAST_COMMIT_MESSAGE" value="All the functions with table output added" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/init.py</url>
+          <line>157</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/init.py</url>
+          <line>79</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
