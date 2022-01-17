@@ -504,7 +504,7 @@ def Unwanted_Activity(log ):
                 df = df.append(row, ignore_index=True)
     caseList = set(caseList)
     Nodes = set(Nodes)
-    # print("Nodes=>", Nodes)
+    # print("Nodes=>" , Nodes)
     DisplayCaseFilteredDFG(caseList, "Unwanted_Activity")
 
 def Bottleneck(log):
