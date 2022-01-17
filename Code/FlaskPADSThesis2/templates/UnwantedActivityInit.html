@@ -6,7 +6,7 @@
 <p>Please select the activities which are not supposed to be not occurring</p>
 <form action="/UnwantedActivityParameter" method="post">
   <label >Select the unwanted activity:</label>
-    <select name="p" multiple class="" >
+    <select id="UnwantedActivitiesID" name="p" multiple class="form-control" >
                 {% for a in ActivitySet %}
                 <option value="{{ a }}">{{ a }}</option>
                 {% endfor %}

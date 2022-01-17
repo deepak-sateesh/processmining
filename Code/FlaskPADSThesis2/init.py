@@ -19,7 +19,7 @@ log_csv=[]
 cols = ['Detected Weakness Row', 'Case ID', 'Weakness Type (AF/PA)', 'Weakness ID', 'Weakness Origin', 'Weakness Time',
         'Weakness Information', 'Weakness Measurement', 'Weakness Level']
 dontFollowList = [('Setup - Machine 8', 'Packing')]
-blacklist = ['Lapping - Machine 1', 'Turning & Milling - Machine 8']
+blackList = []#['Lapping - Machine 1', 'Turning & Milling - Machine 8']
 activitySet=set()
 maxTime = 86400
 df = pd.DataFrame(columns=cols)
@@ -283,7 +283,43 @@ def DisplayCaseFilteredDFG(CaseList, src):
                                 gg.find('{http://www.w3.org/2000/svg}path').set('stroke', '#800000')
 
         mytree.write('./ModifiedSVGs/Redundant_ActivityModified.svg')
+    elif (src == "Unwanted_Activity"):
+        dfg_visualization.save(gviz, "./SVGs/Unwanted_Activity.svg")
+        mytree = ET.parse('./SVGs/Unwanted_Activity.svg')
+        myroot = mytree.getroot()
+        NodesDict = {}
+        print("Unwanted_Activity DisplayCaseFilteredDFG")
+        for g in myroot.findall('{http://www.w3.org/2000/svg}g'):
+            for gg in g.findall('{http://www.w3.org/2000/svg}g'):
+                if (gg.get('class') == 'node'):
+                    n = gg.find('{http://www.w3.org/2000/svg}text').text
+                    nWithoutCount = n.split(" (")
+                    if (nWithoutCount[0] in Nodes):
+                        # chAttrb = gg.find('{http://www.w3.org/2000/svg}polygon').attrib
+                        # print((chAttrb.keys())[0])
+                        temp = gg.find('{http://www.w3.org/2000/svg}title').text
+                        print(temp)
+                        print("nWithoutCount=>", nWithoutCount)
+                        NodesDict[nWithoutCount[0]] = gg.find('{http://www.w3.org/2000/svg}title').text
+                        gg.find('{http://www.w3.org/2000/svg}polygon').set('fill', '#800000')
 
+        print("NodesDict=>", NodesDict)
+        print("Edges=>", Edges)
+        for g in myroot.findall('{http://www.w3.org/2000/svg}g'):
+            for gg in g.findall('{http://www.w3.org/2000/svg}g'):
+                if (gg.get('class') == 'edge'):
+                    for (s, d) in Edges:
+                        title = gg.find('{http://www.w3.org/2000/svg}title').text
+                        t = [title.split('->')]
+                        if (s in NodesDict.keys() and d in NodesDict.keys()):
+                            if (NodesDict[s] == t[0][0] and NodesDict[d] == t[0][1]):
+                                print((s, NodesDict[s], t[0][0], d, NodesDict[d], t[0][1],
+                                       gg.find('{http://www.w3.org/2000/svg}title').text))
+                                gg.find('{http://www.w3.org/2000/svg}polygon').set('fill', '#800000')
+                                gg.find('{http://www.w3.org/2000/svg}polygon').set('stroke', '#800000')
+                                gg.find('{http://www.w3.org/2000/svg}path').set('stroke', '#800000')
+
+        mytree.write('./ModifiedSVGs/Unwanted_ActivityModified.svg')
     elif(src=="Parallelizable_tasks_ProcessCaseLevel"):
         print("Parallelizable_tasks_ProcessCaseLevel DisplayCaseFilteredDFG")
 
@@ -447,21 +483,29 @@ def Redundant_Activity(log):
     #print("Nodes=>", Nodes)
     DisplayCaseFilteredDFG(caseList, "Redundant_Activity")
 
-def Unwanted_Activity(log, blacklist):
-    global df, cols
+def Unwanted_Activity(log ):
+    global df, cols, blackList, Nodes, Edges
+    Nodes=[]
+    Edges=[]
+    caseList=[]
     print("Unwanted activity function")
     for case_index, case in enumerate(log):
         # print(case.attributes['Case ID'] )
         for event_index, event in enumerate(case):
             # print (event_index,event)
-            if (event["Activity"] in blacklist):
+            if (event["Activity"] in blackList):
                 # case.attributes['Case ID']+"-> Event "+str(event_index+1)print("Unwanted activity=> activity: %s -> case: %s that started @ %s " % (event["Activity"], event["Case ID"], event["Start Timestamp"]))
                 row = {cols[0]: event['row_num'], cols[1]: case.attributes['Case ID'], cols[2]: 'AF', cols[3]: '1',
                        cols[4]: 'Expert', cols[5]: event["Start Timestamp"],
                        cols[6]: 'Unwanted activity \"' + event["Activity"] + '\"', cols[7]: 'In the case',
                        cols[8]: 'Activity level'}
+                caseList.append(case.attributes['concept:name'])
+                Nodes.append(event["Activity"])
                 df = df.append(row, ignore_index=True)
-
+    caseList = set(caseList)
+    Nodes = set(Nodes)
+    # print("Nodes=>", Nodes)
+    DisplayCaseFilteredDFG(caseList, "Unwanted_Activity")
 
 def Bottleneck(log):
     global df
@@ -622,7 +666,7 @@ def home(PageName=None):
             return render_template("unwantedActivityInit.html", ActivitySet=activitySet)
         elif (PageName == "unwantedActivity"):
             df.drop(df.index, inplace=True)
-            Unwanted_Activity(logSorted, blacklist)
+            Unwanted_Activity(logSorted)
             PageName = "Unwanted Activity"
 
         elif PageName == "bottleNeck":
@@ -714,12 +758,16 @@ def parameterEFInit():
 def parameterUnwantedActivityInit():
     global activitySet
     global blackList
+    P=[]
     if request.method == 'POST' :
-        P= request.form['p']
+        P= request.form.getlist('p')
 
     blackList=[]
     print("blacklist p=>", P)
-    #blackList.join(P)
+    if(len(blackList)==0):
+        blackList = P
+    else:
+        blackList.join(P)
 
     return redirect("../unwantedActivity")
 
